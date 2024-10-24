@@ -4,23 +4,27 @@ ARG IMAGE_BASE=nvidia/cuda:12.1.0-devel-ubuntu22.04
 FROM ${IMAGE_BASE}
 
 ARG BDIR=/tmp/bld
-ARG TENSORT_RT_COMMIT=a681853d3803ee5893307e812530b5e7004bb6e1
-
 # Install deps
 RUN  apt-get update -y && \
      DEBIAN_FRONTEND=noninteractive apt-get install -y \
     	    python3.10 \
 	    python3-pip \
-	    openmpi-bin libopenmpi-dev git
+	    openmpi-bin libopenmpi-dev git \
+	    git-lfs
 
-RUN pip3 install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
-RUN pip3 install --upgrade transformers
+#RUN pip3 install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
+#RUN pip3 install --upgrade transformers
 
 # Install TensorRT-LLM
+ARG TENSORT_RT_COMMIT=a681853d3803ee5893307e812530b5e7004bb6e1
 RUN mkdir /workspace && \
     cd /workspace && \
     git clone https://github.com/NVIDIA/TensorRT-LLM.git && \
     cd  TensorRT-LLM && \
     git reset --hard ${TENSORT_RT_COMMIT}
+
+# Install model deps
+ARG MODEL_TYPE=llama
+RUN python3 -m pip install -r /workspace/TensorRT-LLM/examples/${MODEL_TYPE}/requirements.txt
 
 LABEL org.opencontainers.image.authors="monakhov@amazon.com"

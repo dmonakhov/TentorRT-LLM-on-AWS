@@ -11,7 +11,9 @@ EXPORT_PATH ?= ..
 ZSTD_COMPRESS_OPTIONS ?= --ultra -12
 
 TAG=${IMAGE_BASE_TAG}-efa-${AWS_OFI_NCCL_VER}
-TAG_VANILLA=${IMAGE_BASE_TAG}-vanilla
+TAG_LLAMA=${IMAGE_BASE_TAG}-llama
+TAG_PHI=${IMAGE_BASE_TAG}-phi
+
 MPI_HOSTFILE ?= ~/.ssh/mpi_hosts.txt
 
 
@@ -24,10 +26,19 @@ build:
 		--build-arg AWS_OFI_NCCL_VER="${AWS_OFI_NCCL_VER}" \
 		--build-arg AWS_EFA_INSTALLER_VER=${AWS_EFA_INSTALLER_VER} .
 
-build-vanilla:
+build-vanilla: build-llama build-phi
+
+build-llama:
 	docker build --network=host --progress plain --rm \
-		--tag "${IMAGE_NAME}:${TAG_VANILLA}" \
+		--tag "${IMAGE_NAME}:${TAG_LLAMA}" \
 		--build-arg IMAGE_BASE="${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
+		--build-arg MODEL_TYPE="llama" \
+		-f Dockerfile.vanilla .
+build-phi:
+	docker build --network=host --progress plain --rm \
+		--tag "${IMAGE_NAME}:${TAG_PHI}" \
+		--build-arg IMAGE_BASE="${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
+		--build-arg MODEL_TYPE="phi" \
 		-f Dockerfile.vanilla .
 
 tar-img:
@@ -35,11 +46,16 @@ tar-img:
 		"${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
 		"${IMAGE_NAME}:${TAG}"  | \
 		zstdmt ${ZSTD_COMPRESS_OPTIONS} -v -f -o ${EXPORT_PATH}/${IMAGE_NAME}-${TAG}.tar.zst
+
 tar-img-vanilla:
 	docker save \
 		"${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
-		"${IMAGE_NAME}:${TAG_VANILLA}"  | \
-		zstdmt ${ZSTD_COMPRESS_OPTIONS} -v -f -o ${EXPORT_PATH}/${IMAGE_NAME}-${TAG_VANILLA}.tar.zst
+		"${IMAGE_NAME}:${TAG_LLAMA}" \
+		"${IMAGE_NAME}:${TAG_PHI}"| \
+		zstdmt ${ZSTD_COMPRESS_OPTIONS} -v -f -o ${EXPORT_PATH}/${IMAGE_NAME}-${TAG_LLAMA}.tar.zst
+#		| \
+
+
 
 mpi-deploy-img:
 	# MPICAT see https://github.com/dmonakhov/gpu_toolbox/blob/main/mpitools/README.md#cat1-for-mpi-environment	
