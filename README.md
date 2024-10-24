@@ -9,6 +9,9 @@ Container with TensorRT-LLM and EFA libraries.
 ```
 make fetch
 make build
+
+# Build vanilla image similar to https://github.com/Azure/AI-benchmarking-guide/blob/main/Benchmarks/LLMBenchmark.py
+make build-vanilla
 ```
 
 

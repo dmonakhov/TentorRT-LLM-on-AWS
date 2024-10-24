@@ -1,7 +1,7 @@
 IMAGE_BASE_NAME ?= cuda
 IMAGE_NAME ?= tensorrt-llm
 IMAGE_BASE_REPO=nvidia/
-IMAGE_BASE_TAG  ?= 12.1.0-devel-ubuntu22.04
+IMAGE_BASE_TAG  ?= 12.4.0-devel-ubuntu22.04
 AWS_OFI_NCCL_VER ?= 1.12.0-aws
 AWS_EFA_INSTALLER_VER ?=1.34.0
 
@@ -11,6 +11,7 @@ EXPORT_PATH ?= ..
 ZSTD_COMPRESS_OPTIONS ?= --ultra -12
 
 TAG=${IMAGE_BASE_TAG}-efa-${AWS_OFI_NCCL_VER}
+TAG_VANILLA=${IMAGE_BASE_TAG}-vanilla
 MPI_HOSTFILE ?= ~/.ssh/mpi_hosts.txt
 
 
@@ -19,14 +20,27 @@ fetch:
 build:
 	docker build --network=host --progress plain --rm \
 		--tag "${IMAGE_NAME}:${TAG}" \
+		--build-arg IMAGE_BASE="${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
 		--build-arg AWS_OFI_NCCL_VER="${AWS_OFI_NCCL_VER}" \
 		--build-arg AWS_EFA_INSTALLER_VER=${AWS_EFA_INSTALLER_VER} .
+
+build-vanilla:
+	docker build --network=host --progress plain --rm \
+		--tag "${IMAGE_NAME}:${TAG_VANILLA}" \
+		--build-arg IMAGE_BASE="${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
+		-f Dockerfile.vanilla .
 
 tar-img:
 	docker save \
 		"${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
 		"${IMAGE_NAME}:${TAG}"  | \
 		zstdmt ${ZSTD_COMPRESS_OPTIONS} -v -f -o ${EXPORT_PATH}/${IMAGE_NAME}-${TAG}.tar.zst
+tar-img-vanilla:
+	docker save \
+		"${IMAGE_BASE_REPO}${IMAGE_BASE_NAME}:${IMAGE_BASE_TAG}" \
+		"${IMAGE_NAME}:${TAG_VANILLA}"  | \
+		zstdmt ${ZSTD_COMPRESS_OPTIONS} -v -f -o ${EXPORT_PATH}/${IMAGE_NAME}-${TAG_VANILLA}.tar.zst
+
 mpi-deploy-img:
 	# MPICAT see https://github.com/dmonakhov/gpu_toolbox/blob/main/mpitools/README.md#cat1-for-mpi-environment	
 	cat ${EXPORT_PATH}/${IMAGE_NAME}-${TAG}.tar.zst | \

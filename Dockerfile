@@ -1,5 +1,7 @@
-FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
+# syntax=docker/dockerfile:1
 
+ARG IMAGE_BASE=nvidia/cuda:12.1.0-devel-ubuntu22.04
+FROM ${IMAGE_BASE}
 
 ARG AWS_OFI_NCCL_VER=1.12.0-aws
 ARG AWS_EFA_INSTALLER_VER=1.34.0
